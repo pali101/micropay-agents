@@ -16,8 +16,8 @@ async function reclaim() {
     // Setup
     const provider = new ethers.providers.JsonRpcProvider(RPC_URL);
     const wallet = new ethers.Wallet(PRIVATE_KEY, provider);
-    const payerAddress = wallet.address;
-    console.log("Payer address:", payerAddress);
+    const merchantAddress = "0x6eb3aFD1c2232b883aa36C6f22100a6F0bD6A9a5";
+    console.log("Merchant address:", merchantAddress);
 
     // Initialize hashchain protocol
     const hashchainProtocol = new HashchainProtocol(
@@ -30,7 +30,7 @@ async function reclaim() {
     try {
         console.log("Reclaiming tokens...");
         await hashchainProtocol.reclaimChannel({
-            merchant: payerAddress,
+            merchant: merchantAddress,
             tokenAddress: TOKEN_ADDRESS
         });
         console.log("Tokens reclaimed successfully.");
