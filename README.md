@@ -2,7 +2,7 @@
 
 Micropay-Agents is a TypeScript-based framework enabling off-chain micropayment channels between a client agent and a merchant agent, secured by smart contracts on Ethereum. It demonstrates atomic, trustless payment-for-data using hashchain commitments and Hashchain Protocol contract integration. This architecture enables a true pay-as-you-go model, where users pay incrementally for each data unit or API call as it is consumed.
 
-The system utilizes the [Hashchain Protocol](hashchainprotocol.com) in the backend, providing a cryptographically secure and efficient way to manage conditional payments and prevent fraud. Each payment is validated by revealing the next preimage in a cryptographic hashchain, ensuring that only valid, sequential payments are accepted by the merchant. This protocol underpins reliable and trustless micropayment flows, making Micropay-Agents suitable for usage-based billing, paid APIs, IoT data monetization, and other granular payment scenarios.
+The system utilizes the [Hashchain Protocol](https://hashchainprotocol.com) in the backend, providing a cryptographically secure and efficient way to manage conditional payments and prevent fraud. Each payment is validated by revealing the next preimage in a cryptographic hashchain, ensuring that only valid, sequential payments are accepted by the merchant. This protocol underpins reliable and trustless micropayment flows, making Micropay-Agents suitable for usage-based billing, paid APIs, IoT data monetization, and other granular payment scenarios.
 
 This architecture enables a true pay-as-you-go model, where users or autonomous AI agents pay incrementally for each data unit or API call as consumed.
 
