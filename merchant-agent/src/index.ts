@@ -1,5 +1,6 @@
 import express, { Request, Response } from 'express';
-import { ethers, Contract, ZeroAddress, keccak256, toUtf8Bytes } from 'ethers';
+import { ethers, Contract, ZeroAddress, keccak256 } from 'ethers';
+import {verifyHashchainToken} from "@hashchain/sdk"
 import dotenv from 'dotenv';
 import MuPayAbi from '../../abi/MuPay.abi.json';
 
@@ -23,27 +24,10 @@ interface ChannelState {
     token: string;
     trustAnchor: string;
     totalTokens: number;
-    latestPreimage: string | null;
+    latestPreimage: string;
     tokensUsed: number;
 }
 const activeChannels = new Map<string, ChannelState>();
-
-// --- Helper Functions ---
-
-/**
- * @notice Verifies a hashchain preimage against the trust anchor.
- * @param trustAnchor The initial hash stored on-chain.
- * @param preimage The preimage received from the payer.
- * @param tokensUsed The number of hashes to perform for verification.
- * @returns True if the verification is successful.
- */
-function verifyHashchain(trustAnchor: string, preimage: string, tokensUsed: number): boolean {
-    let current = toUtf8Bytes(preimage);
-    for (let i = 0; i < tokensUsed; i++) {
-        current = ethers.getBytes(keccak256(current));
-    }
-    return ethers.hexlify(current) === trustAnchor;
-}
 
 // --- Routes ---
 app.post('/negotiate', (req: Request, res: Response) => {
@@ -65,31 +49,31 @@ app.get('/data', (req: Request, res: Response) => {
 });
 
 app.post('/payment', (req: Request, res: Response) => {
-    const { payerAddress, preimage } = req.body;
+    const { payerAddress, preimage, tokensUsed } = req.body;
+    console.log(`Preimage: ${preimage}, Tokens Used: ${tokensUsed} for payer ${payerAddress}`);
 
-    if (!payerAddress || !preimage) {
-        return res.status(400).json({ error: "payerAddress and preimage are required." });
+    if (!payerAddress || !preimage || !tokensUsed) {
+        return res.status(400).json({ error: "payerAddress, preimage, and tokensUsed are required." });
     }
 
-    const channel = activeChannels.get(payerAddress);
+    let payer = payerAddress.toLowerCase();
+    const channel = activeChannels.get(payer);
     if (!channel) {
         return res.status(404).json({ error: "No active channel found for this payer." });
     }
-
-    const newTokensUsed = channel.tokensUsed + 1;
     
     // Validate the received token
-    if (!verifyHashchain(channel.trustAnchor, preimage, newTokensUsed)) {
-        console.error(`Validation FAILED for payer ${payerAddress}`);
+    if (!verifyHashchainToken(channel.latestPreimage, preimage, tokensUsed)) {
+        console.error(`Validation FAILED for payer ${payer}`);
         return res.status(400).json({ error: "Invalid token. Hashchain verification failed." });
     }
 
-    console.log(`Payment validation SUCCESSFUL for payer ${payerAddress}. Total tokens used: ${newTokensUsed}`);
+    console.log(`Payment validation SUCCESSFUL for payer ${payer}.`);
 
     // Update channel state
     channel.latestPreimage = preimage;
-    channel.tokensUsed = newTokensUsed;
-    activeChannels.set(payerAddress, channel);
+    channel.tokensUsed = channel.tokensUsed + tokensUsed;
+    activeChannels.set(payer, channel);
 
     res.status(200).json({ message: "Payment received and validated." });
 });
@@ -103,7 +87,8 @@ app.post('/redeem', async (req: Request, res: Response) => {
         return res.status(400).json({ error: "payerAddress is required." });
     }
 
-    const channel = activeChannels.get(payerAddress);
+    let payer = payerAddress.toLowerCase();
+    const channel = activeChannels.get(payer);
     if (!channel) {
         return res.status(404).json({ error: "No active channel found for this payer to redeem." });
     }
@@ -131,7 +116,7 @@ app.post('/redeem', async (req: Request, res: Response) => {
         console.log(`Redemption successful! Channel for ${payerAddress} is closed.`);
 
         // Clean up the channel from memory
-        activeChannels.delete(payerAddress);
+        activeChannels.delete(payer);
 
         res.status(200).json({ message: "Channel redeemed successfully.", txHash: tx.hash });
 
@@ -156,17 +141,23 @@ function listenForChannels() {
             console.log(`  Total Tokens: ${numberOfTokens}`);
             console.log(`--------------------------\n`);
 
-            muPayContract.channelsMapping(payer, merchant, token).then(channelData => {
-                 activeChannels.set(payer, {
-                    payer: payer,
-                    token: token,
-                    trustAnchor: channelData.trustAnchor,
-                    totalTokens: Number(numberOfTokens),
-                    latestPreimage: null,
-                    tokensUsed: 0,
+            if (activeChannels.has(payer)) {
+                console.warn(`Channel for ${payer} already exists. Skipping.`);
+                return;
+            } else {
+                payer = payer.toLowerCase();
+                muPayContract.channelsMapping(payer, merchant, token).then(channelData => {
+                    activeChannels.set(payer, {
+                        payer: payer,
+                        token: token,
+                        trustAnchor: channelData.trustAnchor,
+                        totalTokens: Number(numberOfTokens),
+                        latestPreimage: channelData.trustAnchor,
+                        tokensUsed: 0,
+                    });
+                    console.log(`Channel for ${payer} successfully stored with trust anchor: ${channelData.trustAnchor}`);
                 });
-                console.log(`Channel for ${payer} successfully stored with trust anchor: ${channelData.trustAnchor}`);
-            });
+            }
         }
     });
 }
