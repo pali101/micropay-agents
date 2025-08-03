@@ -11,7 +11,15 @@ const PRIVATE_KEY = process.env.PRIVATE_KEY!;
 const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS!;
 const TOKEN_ADDRESS = process.env.TOKEN_ADDRESS || ethers.constants.AddressZero;
 const CHANNEL_AMOUNT = process.env.CHANNEL_AMOUNT ? parseInt(process.env.CHANNEL_AMOUNT) : 100000;
-const HASHCHAIN_LENGTH = process.env.HASHCHAIN_LENGTH ? parseInt(process.env.HASHCHAIN_LENGTH) : 100;
+const HASHCHAIN_LENGTH = process.env.HASHCHAIN_LENGTH ? parseInt(process.env.HASHCHAIN_LENGTH) : 20;
+
+const portfolioAddresses = [
+  "0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
+  "0x53d284357ec70ce289d6d64134dfac8e511c8a3d", 
+  "0xfe9e8709d3215310075d67e3ed32a380ccf451c8", 
+  "0x267be1c1d684f78cb4f6a176c4911b741e4ffdc0", 
+  "0x28c6c06298d514db089934071355e5743bf21d60"  
+];
 
 async function main() {
     console.log("Starting client agent...");
@@ -83,12 +91,18 @@ async function main() {
     // request data from merchant and pay
     let tokenUsed = 0;
     
-    while (tokenUsed < HASHCHAIN_LENGTH) {
+    while (tokenUsed < HASHCHAIN_LENGTH && tokenUsed < portfolioAddresses.length) {
         try {
+            // Fetch portfolio data from merchant for the current address in the list
+            // We expect the response to contain portfolio information for portfolioAddresses[tokenUsed]
             const dataResponse = await axios.get(`${MERCHANT_AGENT_URL}/data`, {
-                timeout: 5000 // 5 second timeout
+                params: {
+                    address: portfolioAddresses[tokenUsed]
+                }
             });
-            console.log("Received data from merchant:", dataResponse.data);
+            // Log the full portfolio data received from merchant
+            console.log("Received data from merchant:", JSON.stringify(dataResponse.data, null, 2));
+            await new Promise(resolve => setTimeout(resolve, 1000));
 
             // upon successfully receiving data, send payment token (preimage)
             tokenUsed++;
