@@ -6,6 +6,15 @@ The system utilizes the [Hashchain Protocol](https://hashchainprotocol.com) in t
 
 This architecture enables a true pay-as-you-go model, where users or autonomous AI agents pay incrementally for each data unit or API call as consumed.
 
+## Use Case
+
+Micropay-Agents is perfect for granular, on-demand scenarios such as:
+- Pay-per-query DeFi dashboards or data analytic APIs.
+- Pay-as-you-go access to Web3 account intelligence, oracle feeds, or other metered services.
+- AI agents or IoT devices making autonomous, trackable data purchases in programmable economic flows.
+
+A concrete example now implemented is the integration with the **1inch Portfolio API**, which enables users to pay incrementally for real-time, on-demand DeFi portfolio data fetched for arbitrary Ethereum addresses. With the integration of the 1inch Portfolio API, users can access detailed DeFi portfolio data for any Ethereum address, paying incrementally for each request through **secure, gasless, off-chain hashchain micropayments**. This implementation demonstrates a practical use of pay-as-you-go DeFi data APIs, as envisioned by the ETHGlobal Unite DeFi Hackathon.
+
 ## Architecture Diagram
 
 ![Micropay Agents Architecture](docs/architecture.png)
@@ -25,10 +34,6 @@ This architecture enables a true pay-as-you-go model, where users or autonomous 
 - Generates cryptographic hashchains per the Hashchain Protocol to secure micropayments.
 - Creates payment channels and manages token payments on-chain.
 - Sends sequential payment tokens ("preimages") corresponding to actual consumption.
-
-### Use Case
-
-This project also demonstrates how autonomous AI agents can transact with each other, securely paying for API access or data exchange using trustless, pay-as-you-go micropayment channels.
 
 ### Technology Stack
 
