@@ -1,6 +1,7 @@
 import express, { Request, Response } from 'express';
 import { ethers, Contract, ZeroAddress, keccak256 } from 'ethers';
-import {verifyHashchainToken} from "@hashchain/sdk"
+import { verifyHashchainToken } from "@hashchain/sdk";
+import axios from 'axios';
 import dotenv from 'dotenv';
 import MuPayAbi from '../../abi/MuPay.abi.json';
 
@@ -11,6 +12,10 @@ const app = express();
 const PORT = process.env.MERCHANT_PORT || 3001;
 const provider = new ethers.WebSocketProvider(process.env.WS_RPC_URL!);
 const merchantWallet = new ethers.Wallet(process.env.MERCHANT_PRIVATE_KEY!, provider);
+const oneinch_api_key = process.env.ONEINCH_API_KEY!;
+if (!oneinch_api_key) {
+    throw new Error("1inch API key is not set in environment variables");
+}
 
 // --- Contract Setup ---
 const muPayContract = new Contract(process.env.MUPAY_CONTRACT_ADDRESS!, MuPayAbi, merchantWallet);
@@ -32,20 +37,48 @@ const activeChannels = new Map<string, ChannelState>();
 // --- Routes ---
 app.post('/negotiate', (req: Request, res: Response) => {
     const { payer, contract, token, amount } = req.body;
-    console.log(`Negotiation request from ${payer} for ${amount}.`);
+    console.log(`Negotiation request from ${payer} for amount: ${amount}.`);
     res.status(200).json({
         message: "Terms accepted.",
         merchantAddress: merchantWallet.address,
     });
 });
 
-app.get('/data', (req: Request, res: Response) => {
-    console.log("Data requested by a payer.");
-    const data = {
-        price: "ETH/USD - $3456.78",
-        timestamp: new Date().toISOString(),
+app.get('/data', async (req: Request, res: Response) => {
+    // Extract user Ethereum address from query parameters, return 400 error if missing
+    const userAddress = req.query.address as string;
+    if (!userAddress) {
+        return res.status(400).json({ error: "Missing address query parameter" });
+    }
+
+    // Prepare 1inch Portfolio API endpoint and request configuration with authentication and parameters
+    const url = "https://api.1inch.dev/portfolio/portfolio/v5.0/general/current_value";
+
+    const config = {
+        headers: {
+            Authorization: `Bearer ${oneinch_api_key}`,
+        },
+        params: {
+            addresses: [userAddress],
+            chain_id: "1",       // Ethereum mainnet
+            use_cache: "true",   // or "false" to always get fresh data
+        },
+        paramsSerializer: {
+            indexes: null,       // preserving correct params serialization
+        },
     };
-    res.status(200).json(data);
+
+    try {
+        console.log(`Fetching portfolio data for address: ${userAddress}`);
+        // Fetch portfolio data from 1inch API for the specified address
+        const response = await axios.get(url, config);
+        console.log("1inch API returned data:", response.data ? "success" : "empty");
+        // Return the portfolio data JSON to the client
+        res.json(response.data);
+    } catch (error: any) {
+        console.error("Error fetching portfolio data from 1inch:", error.response?.data || error.message);
+        res.status(500).json({ error: "Failed to fetch portfolio data." });
+    }
 });
 
 app.post('/payment', (req: Request, res: Response) => {
@@ -61,7 +94,7 @@ app.post('/payment', (req: Request, res: Response) => {
     if (!channel) {
         return res.status(404).json({ error: "No active channel found for this payer." });
     }
-    
+
     // Validate the received token
     if (!verifyHashchainToken(channel.latestPreimage, preimage, tokensUsed)) {
         console.error(`Validation FAILED for payer ${payer}`);
@@ -163,7 +196,7 @@ function listenForChannels() {
 }
 
 app.listen(PORT, () => {
-  console.log(`Merchant agent running at http://localhost:${PORT}`);
+    console.log(`Merchant agent running at http://localhost:${PORT}`);
 });
 
 // Start blockchain listener
