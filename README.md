@@ -6,6 +6,10 @@ The system utilizes the [Hashchain Protocol](hashchainprotocol.com) in the backe
 
 This architecture enables a true pay-as-you-go model, where users or autonomous AI agents pay incrementally for each data unit or API call as consumed.
 
+## Architecture Diagram
+
+![Micropay Agents Architecture](docs/architecture.png)
+
 ## Key Features
 
 ### Merchant Agent
