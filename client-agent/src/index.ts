@@ -25,7 +25,7 @@ async function main() {
     // generate hashchain and secret
     const seed = await generateSeed();
     const paymentHashchain = await hashchain(seed, HASHCHAIN_LENGTH);
-    const trustAnchor = paymentHashchain[0];
+    const trustAnchor = paymentHashchain[HASHCHAIN_LENGTH];
 
     // negotiate payment channel terms
     console.log("Negotiating payment channel terms...");
@@ -57,8 +57,8 @@ async function main() {
         trustAnchor: trustAnchor,
         amount: CHANNEL_AMOUNT,
         numberOfTokens: HASHCHAIN_LENGTH,
-        merchantWithdrawAfterBlocks: 10,
-        payerWithdrawAfterBlocks: 20
+        merchantWithdrawAfterBlocks: 1,
+        payerWithdrawAfterBlocks: 1
     };
 
     // check token allowance
@@ -96,11 +96,12 @@ async function main() {
 
             const paymentResponse = await axios.post(`${MERCHANT_AGENT_URL}/payment`, {
                 payerAddress: payerAddress,
-                preimage: preimage
+                preimage: preimage,
+                tokensUsed: 1
             }, {
                 timeout: 5000 // 5 second timeout
             });
-            console.log(`Payment #${tokenUsed} sent:`, paymentResponse.data.message);
+            console.log(`Payment #${tokenUsed} sent. Merchant response: `, paymentResponse.data.message);
         } catch (error) {
             console.error("Error during data request or payment:", error);
             break; // Exit loop on error
@@ -108,6 +109,10 @@ async function main() {
     }
 
     console.log("All requested data paid for or hashchain fully consumed.");
+
+    // wait for 2 seconds before redeeming the channel
+    console.log("Waiting for 2 seconds before redeeming the channel...");
+    await new Promise(resolve => setTimeout(resolve, 2000));
 
     // redeem channel
     await axios.post(`${MERCHANT_AGENT_URL}/redeem`, {
