@@ -1,0 +1,55 @@
+flowchart TD
+
+  subgraph PayerAgent
+    A1["1: Generate Hash Chain"]
+    A2["2: Negotiate Terms (Off-chain)"]
+    A3["3: Call createChannel"]
+    L1["6: Request Data"]
+    L2["7a: Receive and Verify Data"]
+    L3["8: Send Preimage Payment"]
+  end
+
+  subgraph MerchantAgent
+    B1["2: Negotiate Terms (Off-chain)"]
+    B2["4: Listen for ChannelCreated Event"]
+    M1["5: Receive Data Request"]
+    M2["6: Send Data"]
+    M3["7b: Receive and Store Preimage"]
+    R1["9a: Call redeemChannel"]
+  end
+
+  subgraph OnChainMuPayContract
+    C1["3: createChannel locks funds and emits event"]
+    C2["Channel is Live"]
+    S1["9b: redeemChannel called"]
+    S2{"10: Verify Hashchain"}
+    S3["11: Pay Merchant and Refund Payer"]
+    S4["Revert"]
+  end
+
+  A1 --> A2
+  A2 -.-> B1
+  B1 -.-> A2
+  A2 --> A3
+  A3 --> L1
+  L2 --> L3
+  L3 -- "More Data?" --> L1
+
+  B1 --> B2
+  B2 --> M1
+  M1 --> M2
+  M2 --> M3
+  M3 -- "End Session" --> R1
+
+  C1 --> C2
+  S1 --> S2
+  S2 -- "Valid" --> S3
+  S2 -- "Invalid" --> S4
+
+  %% Inter-Agent and Contract Connections
+  A3 --> C1
+  C1 --> B2
+  L1 --> M1
+  M2 --> L2
+  L3 --> M3
+  R1 --> S1
