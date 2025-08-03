@@ -1,0 +1,35 @@
+{
+  "name": "merchant-agent",
+  "version": "1.0.0",
+  "description": "",
+  "keywords": [
+    "micropayments"
+  ],
+  "homepage": "https://github.com/pali101/micropay-agents#readme",
+  "bugs": {
+    "url": "https://github.com/pali101/micropay-agents/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pali101/micropay-agents.git"
+  },
+  "license": "ISC",
+  "author": "Aashish Paliwal",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "ts-node src/index.ts"
+  },
+  "dependencies": {
+    "dotenv": "^17.2.1",
+    "ethers": "^6.15.0",
+    "express": "^5.1.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.3",
+    "@types/node": "^24.1.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.2"
+  }
+}

@@ -1,0 +1,13 @@
+# Node dependencies
+/node_modules
+
+# Build outputs
+/dist
+
+# Environment variables
+.env
+.env*.local
+!.env.example
+
+# Package lock files
+package-lock.json
